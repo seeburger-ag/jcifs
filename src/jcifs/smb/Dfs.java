@@ -47,7 +47,9 @@ public class Dfs {
     protected static CacheEntry FALSE_ENTRY = new Dfs.CacheEntry(0L);
 
     protected CacheEntry _domains = null; /* aka trusted domains cache */
+    
     protected CacheEntry referrals = null;
+    protected final Object referralsLock = new Object();
 
     public HashMap getTrustedDomains(NtlmPasswordAuthentication auth) throws SmbAuthException {
         if (DISABLED || auth.domain == "?")
@@ -152,7 +154,7 @@ public class Dfs {
         }
         return null;
     }
-    public synchronized DfsReferral resolve(String domain,
+    public DfsReferral resolve(String domain,
                 String root,
                 String path,
                 NtlmPasswordAuthentication auth) throws SmbAuthException {
@@ -252,12 +254,14 @@ public class Dfs {
             /* We did not match a domain based root. Now try to match the
              * longest path in the list of stand-alone referrals.
              */
+            synchronized (referralsLock) {
             if (referrals != null && now > referrals.expiration) {
                 referrals = null;
             }
             if (referrals == null) {
                 referrals = new CacheEntry(0);
             }
+
             String key = "\\" + domain + "\\" + root;
             if (path.equals("\\") == false)
                 key += path;
@@ -265,7 +269,7 @@ public class Dfs {
 
             Iterator iter = referrals.map.keySet().iterator();
             while (iter.hasNext()) {
-                String _key = (String)iter.next();
+                    String _key = (String) iter.next();
                 int _klen = _key.length();
                 boolean match = false;
 
@@ -276,13 +280,15 @@ public class Dfs {
                 }
 
                 if (match)
-                    dr = (DfsReferral)referrals.map.get(_key);
+                        dr = (DfsReferral) referrals.map.get(_key);
+                }
             }
         }
 
         return dr;
     }
-    synchronized void insert(String path, DfsReferral dr) {
+    
+    void insert(String path, DfsReferral dr) {
         int s1, s2;
         String server, share, key;
 
@@ -316,6 +322,7 @@ public class Dfs {
          */
         dr.pathConsumed -= 1 + server.length() + 1 + share.length();
 
+        synchronized (referralsLock) {
         if (referrals != null && (System.currentTimeMillis() + 10000) > referrals.expiration) {
             referrals = null;
         }
@@ -323,5 +330,6 @@ public class Dfs {
             referrals = new CacheEntry(0);
         }
         referrals.map.put(key, dr);
+    }
     }
 }
