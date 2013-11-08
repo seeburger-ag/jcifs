@@ -1,0 +1,23 @@
+diff --git a/src/jcifs/smb/SmbTransport.java b/src/jcifs/smb/SmbTransport.java
+index 947b5a4..c6ca340 100644
+--- a/src/jcifs/smb/SmbTransport.java
++++ b/src/jcifs/smb/SmbTransport.java
+@@ -114,6 +114,9 @@
+         this.port = port;
+         this.localAddr = localAddr;
+         this.localPort = localPort;
++        if (address != null) {
++                this.tconHostName = address.getHostName();
++        }
+     }
+ 
+     synchronized SmbSession getSmbSession() {
+@@ -373,7 +376,7 @@
+         } finally {
+             digest = null;
+             socket = null;
+-            tconHostName = null;
++//            tconHostName = null;
+         }
+     }
+ 
