@@ -114,6 +114,9 @@ public class SmbTransport extends Transport implements SmbConstants {
         this.port = port;
         this.localAddr = localAddr;
         this.localPort = localPort;
+        if (address != null) {
+                this.tconHostName = address.getHostName();
+        }
     }
 
     synchronized SmbSession getSmbSession() {
@@ -373,7 +376,7 @@ public class SmbTransport extends Transport implements SmbConstants {
         } finally {
             digest = null;
             socket = null;
-            tconHostName = null;
+//            tconHostName = null;
         }
     }
 
