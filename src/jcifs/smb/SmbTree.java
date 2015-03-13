@@ -1,16 +1,16 @@
 /* jcifs smb client library in Java
  * Copyright (C) 2000  "Michael B. Allen" <jcifs at samba dot org>
- * 
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -18,11 +18,6 @@
 
 package jcifs.smb;
 
-import java.io.IOException;
-import java.net.UnknownHostException;
-import jcifs.UniAddress;
-import jcifs.netbios.NbtAddress;
-import jcifs.Config;
 
 class SmbTree {
 
@@ -152,39 +147,41 @@ synchronized (session.transport()) {
              * sure if the NetBIOS session has been successfully
              * established.
              */
-    
+
             session.transport.connect();
 
             unc = "\\\\" + session.transport.tconHostName + '\\' + share;
-    
+
             /* IBM iSeries doesn't like specifying a service. Always reset
              * the service to whatever was determined in the constructor.
              */
             service = service0;
-    
+
             /*
              * Tree Connect And X Request / Response
              */
-    
+
             if( session.transport.log.level >= 4 )
                 session.transport.log.println( "treeConnect: unc=" + unc + ",service=" + service );
-    
+
             SmbComTreeConnectAndXResponse response =
                     new SmbComTreeConnectAndXResponse( andxResponse );
             SmbComTreeConnectAndX request =
                     new SmbComTreeConnectAndX( session, unc, service, andx );
             session.send( request, response );
-    
+
             tid = response.tid;
             service = response.service;
             inDfs = response.shareIsInDfs;
             tree_num = tree_conn_counter++;
-    
+
             connectionState = 2; // connected
         } catch (SmbException se) {
             treeDisconnect(true);
             connectionState = 0;
             throw se;
+        } finally {
+            session.transport.notifyAll();
         }
 }
     }
