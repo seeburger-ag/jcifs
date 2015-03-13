@@ -1,16 +1,16 @@
 /* jcifs smb client library in Java
  * Copyright (C) 2000  "Michael B. Allen" <jcifs at samba dot org>
- * 
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -18,12 +18,11 @@
 
 package jcifs.smb;
 
-import java.net.URL;
-import java.net.UnknownHostException;
-import java.net.MalformedURLException;
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InterruptedIOException;
+import java.net.MalformedURLException;
+import java.net.UnknownHostException;
 
 import jcifs.util.transport.TransportException;
 
@@ -34,7 +33,7 @@ import jcifs.util.transport.TransportException;
 public class SmbFileInputStream extends InputStream {
 
     private long fp;
-    private int readSize, openFlags, access;
+    private int readSize, readSizeFile, openFlags, access;
     private byte[] tmp = new byte[1];
     private Long timeout;
 
@@ -76,8 +75,15 @@ public class SmbFileInputStream extends InputStream {
         } else {
             file.connect0();
         }
+        boolean isSigningEnabled = (file.tree.session.transport.flags2 & ServerMessageBlock.FLAGS2_SECURITY_SIGNATURES) == ServerMessageBlock.FLAGS2_SECURITY_SIGNATURES;
         readSize = Math.min( file.tree.session.transport.rcv_buf_size - 70,
                             file.tree.session.transport.server.maxBufferSize - 70 );
+        if (!isSigningEnabled && (file.tree.session.transport.server.capabilities & SmbConstants.CAP_LARGE_READX) == SmbConstants.CAP_LARGE_READX) {
+            readSizeFile = Math.min(SmbConstants.RCV_BUF_SIZE - 70, 0xFFFF - 70);
+        } else
+        {
+            readSizeFile = readSize;
+        }
     }
 
     /**
@@ -176,7 +182,8 @@ public class SmbFileInputStream extends InputStream {
 
         int r, n;
         do {
-            r = len > readSize ? readSize : len;
+            int blockSize = (file.getType() == SmbFile.TYPE_FILESYSTEM) ? readSizeFile : readSize;
+            r = len > blockSize ? blockSize : len;
 
             if( file.log.level >= 4 )
                 file.log.println( "read: len=" + len + ",r=" + r + ",fp=" + fp );
@@ -207,7 +214,7 @@ if( file.type == SmbFile.TYPE_NAMED_PIPE ) {
     }
 /**
  * This stream class is unbuffered. Therefore this method will always
- * return 0 for streams connected to regular files. However, a 
+ * return 0 for streams connected to regular files. However, a
  * stream created from a Named Pipe this method will query the server using a
  * "peek named pipe" operation and return the number of available bytes
  * on the server.
@@ -224,10 +231,10 @@ if( file.type == SmbFile.TYPE_NAMED_PIPE ) {
         try {
             pipe = (SmbNamedPipe)file;
             file.open(SmbFile.O_EXCL, pipe.pipeType & 0xFF0000, SmbFile.ATTR_NORMAL, 0 );
-    
+
             req = new TransPeekNamedPipe( file.unc, file.fid );
             resp = new TransPeekNamedPipeResponse( pipe );
-    
+
             pipe.send( req, resp );
             if( resp.status == TransPeekNamedPipeResponse.STATUS_DISCONNECTED ||
                     resp.status == TransPeekNamedPipeResponse.STATUS_SERVER_END_CLOSED ) {

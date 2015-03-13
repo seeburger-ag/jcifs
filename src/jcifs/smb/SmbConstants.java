@@ -1,8 +1,9 @@
 package jcifs.smb;
 
-import java.util.LinkedList;
 import java.net.InetAddress;
+import java.util.LinkedList;
 import java.util.TimeZone;
+
 import jcifs.Config;
 
 interface SmbConstants {
@@ -12,8 +13,8 @@ interface SmbConstants {
     static final int DEFAULT_MAX_MPX_COUNT = 10;
     static final int DEFAULT_RESPONSE_TIMEOUT = 30000;
     static final int DEFAULT_SO_TIMEOUT = 35000;
-    static final int DEFAULT_RCV_BUF_SIZE = 60416;
-    static final int DEFAULT_SND_BUF_SIZE = 16644;
+    static final int DEFAULT_RCV_BUF_SIZE = 0xFFFF;
+    static final int DEFAULT_SND_BUF_SIZE = 0xFFFF;
     static final int DEFAULT_SSN_LIMIT = 250;
     static final int DEFAULT_CONN_TIMEOUT = 35000;
 
@@ -63,6 +64,8 @@ interface SmbConstants {
     static final int CAP_LOCK_AND_READ    = 0x0100;
     static final int CAP_NT_FIND          = 0x0200;
     static final int CAP_DFS              = 0x1000;
+    static final int CAP_LARGE_READX = 0x4000;
+    static final int CAP_LARGE_WRITEX = 0x8000;
     static final int CAP_EXTENDED_SECURITY = 0x80000000;
 
     // file attribute encoding
@@ -100,12 +103,12 @@ interface SmbConstants {
 
 
     // flags for move and copy
-    static final int FLAGS_TARGET_MUST_BE_FILE         = 0x0001; 
-    static final int FLAGS_TARGET_MUST_BE_DIRECTORY    = 0x0002; 
-    static final int FLAGS_COPY_TARGET_MODE_ASCII      = 0x0004; 
+    static final int FLAGS_TARGET_MUST_BE_FILE         = 0x0001;
+    static final int FLAGS_TARGET_MUST_BE_DIRECTORY    = 0x0002;
+    static final int FLAGS_COPY_TARGET_MODE_ASCII      = 0x0004;
     static final int FLAGS_COPY_SOURCE_MODE_ASCII      = 0x0008;
-    static final int FLAGS_VERIFY_ALL_WRITES           = 0x0010; 
-    static final int FLAGS_TREE_COPY                   = 0x0020; 
+    static final int FLAGS_VERIFY_ALL_WRITES           = 0x0010;
+    static final int FLAGS_TREE_COPY                   = 0x0020;
 
     // open function
     static final int OPEN_FUNCTION_FAIL_IF_EXISTS      = 0x0000;

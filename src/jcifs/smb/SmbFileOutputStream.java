@@ -1,16 +1,16 @@
 /* jcifs smb client library in Java
  * Copyright (C) 2000  "Michael B. Allen" <jcifs at samba dot org>
- * 
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -18,12 +18,10 @@
 
 package jcifs.smb;
 
-import java.net.URL;
-import java.io.OutputStream;
 import java.io.IOException;
-import java.net.UnknownHostException;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
-import jcifs.util.LogStream;
+import java.net.UnknownHostException;
 
 /**
  * This <code>OutputStream</code> can write bytes to a file on an SMB file server.
@@ -33,7 +31,7 @@ public class SmbFileOutputStream extends OutputStream {
 
     private SmbFile file;
     private boolean append, useNTSmbs;
-    private int openFlags, access, writeSize;
+    private int openFlags, writeSizeFile, access, writeSize;
     private long fp;
     private byte[] tmp = new byte[1];
     private SmbComWriteAndX reqx;
@@ -88,7 +86,7 @@ public class SmbFileOutputStream extends OutputStream {
  * {@link jcifs.smb.SmbFile} for a detailed description and examples of
  * the smb URL syntax. If the second argument is <code>true</code>, then
  * bytes will be written to the end of the file rather than the beginning.
- * 
+ *
  * @param file An <code>SmbFile</code> representing the file to write to
  * @param append Append to the end of file
  */
@@ -111,7 +109,7 @@ accessed by another process" error. The <code>FILE_SHARE_READ</code>,
 <code>FILE_SHARE_WRITE</code>, and <code>FILE_SHARE_DELETE</code> may be
 combined with the bitwise OR '|' to specify that other peocesses may read,
 write, and/or delete the file while the jCIFS user has the file open.
- * 
+ *
  * @param url An smb URL representing the file to write to
  * @param shareAccess File sharing flag: <code>SmbFile.FILE_NOSHARE</code> or any combination of <code>SmbFile.FILE_READ</code>, <code>SmbFile.FILE_WRITE</code>, and <code>SmbFile.FILE_DELETE</code>
  */
@@ -142,6 +140,12 @@ write, and/or delete the file while the jCIFS user has the file open.
         file.open( openFlags, access | SmbConstants.FILE_WRITE_DATA, SmbFile.ATTR_NORMAL, 0 );
         this.openFlags &= ~(SmbFile.O_CREAT | SmbFile.O_TRUNC); /* in case close and reopen */
         writeSize = file.tree.session.transport.snd_buf_size - 70;
+        boolean isSigningEnabled = (file.tree.session.transport.flags2 & ServerMessageBlock.FLAGS2_SECURITY_SIGNATURES) == ServerMessageBlock.FLAGS2_SECURITY_SIGNATURES;
+        if (!isSigningEnabled && (file.tree.session.transport.server.capabilities & SmbConstants.CAP_LARGE_WRITEX) == SmbConstants.CAP_LARGE_WRITEX) {
+            writeSizeFile = Math.min(SmbConstants.RCV_BUF_SIZE - 70, 0xFFFF - 70);
+        } else {
+            writeSizeFile = writeSize;
+        }
 
         useNTSmbs = file.tree.session.transport.hasCapability( ServerMessageBlock.CAP_NT_SMBS );
         if( useNTSmbs ) {
@@ -149,7 +153,7 @@ write, and/or delete the file while the jCIFS user has the file open.
             rspx = new SmbComWriteAndXResponse();
         } else {
             req = new SmbComWrite();
-            rsp = new SmbComWriteResponse();    
+            rsp = new SmbComWriteResponse();
         }
     }
 
@@ -204,7 +208,7 @@ write, and/or delete the file while the jCIFS user has the file open.
  * Writes len bytes from the specified byte array starting at
  * offset off to this file output stream.
  *
- * @param b The array 
+ * @param b The array
  * @throws IOException if a network error occurs
  */
 
@@ -233,15 +237,16 @@ write, and/or delete the file while the jCIFS user has the file open.
 
         int w;
         do {
-            w = len > writeSize ? writeSize : len;
+            int blockSize = (file.getType() == SmbFile.TYPE_FILESYSTEM) ? writeSizeFile : writeSize;
+            w = len > blockSize ? blockSize : len;
             if( useNTSmbs ) {
                 reqx.setParam( file.fid, fp, len - w, b, off, w );
-if ((flags & 1) != 0) {
-    reqx.setParam( file.fid, fp, len, b, off, w );
-    reqx.writeMode = 0x8;
-} else {
-    reqx.writeMode = 0;
-}
+                if ((flags & 1) != 0) {
+                    reqx.setParam( file.fid, fp, len, b, off, w );
+                    reqx.writeMode = 0x8;
+                } else {
+                    reqx.writeMode = 0;
+                }
                 file.send( reqx, rspx );
                 fp += rspx.count;
                 len -= rspx.count;

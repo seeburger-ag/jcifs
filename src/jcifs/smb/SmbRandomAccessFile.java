@@ -1,16 +1,16 @@
 /* jcifs smb client library in Java
  * Copyright (C) 2003  "Michael B. Allen" <jcifs at samba dot org>
- * 
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -20,11 +20,10 @@ package jcifs.smb;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.UnknownHostException;
+
 import jcifs.util.Encdec;
 
 public class SmbRandomAccessFile implements DataOutput, DataInput {
@@ -55,8 +54,21 @@ public class SmbRandomAccessFile implements DataOutput, DataInput {
             throw new IllegalArgumentException( "Invalid mode" );
         }
         file.open( openFlags, access, SmbFile.ATTR_NORMAL, options );
-        readSize = file.tree.session.transport.rcv_buf_size - 70;
-        writeSize = file.tree.session.transport.snd_buf_size - 70;
+
+        boolean isSigningEnabled = (file.tree.session.transport.flags2 & ServerMessageBlock.FLAGS2_SECURITY_SIGNATURES) == ServerMessageBlock.FLAGS2_SECURITY_SIGNATURES;
+
+        if (!isSigningEnabled && (file.tree.session.transport.server.capabilities & SmbConstants.CAP_LARGE_READX) == SmbConstants.CAP_LARGE_READX) {
+            readSize = Math.min(SmbConstants.RCV_BUF_SIZE - 70, 0xFFFF -70);
+        } else {
+            readSize = file.tree.session.transport.rcv_buf_size - 70;
+        }
+
+        if (!isSigningEnabled && (file.tree.session.transport.server.capabilities & SmbConstants.CAP_LARGE_WRITEX) == SmbConstants.CAP_LARGE_WRITEX) {
+            writeSize = Math.min(SmbConstants.SND_BUF_SIZE - 70, 0xFFFF - 70);
+        } else {
+            writeSize = Math.min( file.tree.session.transport.snd_buf_size - 70,
+                                  file.tree.session.transport.server.maxBufferSize - 70 );
+        }
         fp = 0L;
     }
 
@@ -101,7 +113,7 @@ public class SmbRandomAccessFile implements DataOutput, DataInput {
     public final void readFully( byte b[], int off, int len ) throws SmbException {
         int n = 0, count;
 
-        do {    
+        do {
             count = this.read( b, off + n, len - n );
             if( count < 0 ) throw new SmbException( "EOF" );
             n += count;
