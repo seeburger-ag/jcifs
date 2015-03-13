@@ -1,16 +1,16 @@
 /* jcifs smb client library in Java
  * Copyright (C) 2000  "Michael B. Allen" <jcifs at samba dot org>
- * 
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -19,6 +19,7 @@
 package jcifs.smb;
 
 import java.util.Enumeration;
+
 import jcifs.Config;
 import jcifs.util.Hexdump;
 
@@ -94,11 +95,18 @@ abstract class SmbComTransaction extends ServerMessageBlock implements Enumerati
 
     void reset() {
         super.reset();
-        isPrimary = hasMore = true; 
+        isPrimary = hasMore = true;
     }
     void reset( int key, String lastName ) {
         reset();
     }
+
+    // SMC: getPadding may be overriden in some sub-classes to accomodate
+    // variations in other vendors' implementations.
+    public int getPadding() {
+        return PADDING_SIZE;
+    }
+
     public boolean hasMoreElements() {
         return hasMore;
     }
@@ -114,8 +122,8 @@ abstract class SmbComTransaction extends ServerMessageBlock implements Enumerati
             } else if (command == SMB_COM_NT_TRANSACT) {
                 parameterOffset += 2;
             }
-            pad = parameterOffset % PADDING_SIZE;
-            pad = pad == 0 ? 0 : PADDING_SIZE - pad;
+            pad = parameterOffset % this.getPadding();
+            pad = pad == 0 ? 0 : this.getPadding() - pad;
             parameterOffset += pad;
 
             totalParameterCount = writeParametersWireFormat( txn_buf, bufParameterOffset );
@@ -126,8 +134,8 @@ abstract class SmbComTransaction extends ServerMessageBlock implements Enumerati
             available -= parameterCount;
 
             dataOffset = parameterOffset + parameterCount;
-            pad1 = dataOffset % PADDING_SIZE;
-            pad1 = pad1 == 0 ? 0 : PADDING_SIZE - pad1;
+            pad1 = dataOffset % this.getPadding();
+            pad1 = pad1 == 0 ? 0 : this.getPadding() - pad1;
             dataOffset += pad1;
 
             totalDataCount = writeDataWireFormat( txn_buf, bufDataOffset );
@@ -143,8 +151,8 @@ abstract class SmbComTransaction extends ServerMessageBlock implements Enumerati
 
             parameterOffset = SECONDARY_PARAMETER_OFFSET;
             if(( totalParameterCount - parameterDisplacement ) > 0 ) {
-                pad = parameterOffset % PADDING_SIZE;
-                pad = pad == 0 ? 0 : PADDING_SIZE - pad;
+                pad = parameterOffset % this.getPadding();
+                pad = pad == 0 ? 0 : this.getPadding() - pad;
                 parameterOffset += pad;
             }
 
@@ -156,8 +164,8 @@ abstract class SmbComTransaction extends ServerMessageBlock implements Enumerati
             available -= parameterCount;
 
             dataOffset = parameterOffset + parameterCount;
-            pad1 = dataOffset % PADDING_SIZE;
-            pad1 = pad1 == 0 ? 0 : PADDING_SIZE - pad1;
+            pad1 = dataOffset % this.getPadding();
+            pad1 = pad1 == 0 ? 0 : this.getPadding() - pad1;
             dataOffset += pad1;
 
             dataDisplacement += dataCount;
