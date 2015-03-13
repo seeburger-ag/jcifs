@@ -1,16 +1,16 @@
 /* jcifs smb client library in Java
  * Copyright (C) 2000  "Michael B. Allen" <jcifs at samba dot org>
- * 
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -18,8 +18,6 @@
 
 package jcifs.smb;
 
-import java.io.InputStream;
-import java.io.IOException;
 import jcifs.util.Hexdump;
 
 abstract class AndXServerMessageBlock extends ServerMessageBlock {
@@ -49,14 +47,14 @@ abstract class AndXServerMessageBlock extends ServerMessageBlock {
         return 0;
     }
 
-    /* 
+    /*
      * We overload this method from ServerMessageBlock because
      * we want writeAndXWireFormat to write the parameterWords
      * and bytes. This is so we can write batched smbs because
      * all but the first smb of the chaain do not have a header
      * and therefore we do not want to writeHeaderWireFormat. We
      * just recursivly call writeAndXWireFormat.
-     */ 
+     */
 
     int encode( byte[] dst, int dstIndex ) {
         int start = headerStart = dstIndex;
@@ -172,7 +170,7 @@ abstract class AndXServerMessageBlock extends ServerMessageBlock {
             dstIndex += andx.wordCount + 1;
             andx.wordCount /= 2;
             dst[andxStart] = (byte)( andx.wordCount & 0xFF );
-    
+
             andx.byteCount = andx.writeBytesWireFormat( dst, dstIndex + 2 );
             dst[dstIndex++] = (byte)( andx.byteCount & 0xFF );
             dst[dstIndex++] = (byte)(( andx.byteCount >> 8 ) & 0xFF );
@@ -203,7 +201,7 @@ abstract class AndXServerMessageBlock extends ServerMessageBlock {
              * no point in calling readParameterWordsWireFormat if there are no more
              * parameter words. besides, win98 doesn't return "OptionalSupport" field
              */
- 
+
             if( wordCount > 2 ) {
                 readParameterWordsWireFormat( buffer, bufferIndex + 4 );
 
@@ -213,8 +211,10 @@ abstract class AndXServerMessageBlock extends ServerMessageBlock {
                  * the correct number of bytes for signing purposes. Otherwise we get a
                  * signing verification failure.
                  */
-                if (command == SMB_COM_NT_CREATE_ANDX && ((SmbComNTCreateAndXResponse)this).isExtended)
+                if (command == SMB_COM_NT_CREATE_ANDX && ((SmbComNTCreateAndXResponse)this).isExtended
+                        && ((SmbComNTCreateAndXResponse)this).fileType != 1) {
                     wordCount += 8;
+                }
             }
 
             bufferIndex = start + 1 + (wordCount * 2);

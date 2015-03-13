@@ -18,12 +18,13 @@
 
 package jcifs.smb;
 
-import java.io.IOException;
-import java.security.*;
-import jcifs.ntlmssp.*;
-import jcifs.util.LogStream;
-import jcifs.util.Hexdump;
+import jcifs.ntlmssp.NtlmFlags;
+import jcifs.ntlmssp.Type1Message;
+import jcifs.ntlmssp.Type2Message;
+import jcifs.ntlmssp.Type3Message;
 import jcifs.util.Encdec;
+import jcifs.util.Hexdump;
+import jcifs.util.LogStream;
 
 /**
 For initiating NTLM authentication (including NTLMv2). If you want to add NTLMv2 authentication support to something this is what you want to use. See the code for details. Note that JCIFS does not implement the acceptor side of NTLM authentication.
@@ -142,7 +143,7 @@ public class NtlmContext {
                     }
 
                     serverChallenge = msg2.getChallenge();
-                    ntlmsspFlags &= msg2.getFlags();
+                    ntlmsspFlags &= (msg2.getFlags() | NtlmFlags.NTLMSSP_NEGOTIATE_SIGN);
 
 //                  netbiosName = getNtlmsspListItem(token, 0x0001);
 
