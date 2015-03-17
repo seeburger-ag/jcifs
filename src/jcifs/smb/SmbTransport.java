@@ -1,17 +1,17 @@
 /* jcifs smb client library in Java
  * Copyright (C) 2005  "Michael B. Allen" <jcifs at samba dot org>
  *                  "Eric Glass" <jcifs at samba dot org>
- * 
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -223,6 +223,7 @@ public class SmbTransport extends Transport implements SmbConstants {
                         case NbtException.CALLED_NOT_PRESENT:
                         case NbtException.NOT_LISTENING_CALLED:
                             socket.close();
+                            port = 0;
                             break;
                         default:
                             disconnect( true );
@@ -554,7 +555,7 @@ public class SmbTransport extends Transport implements SmbConstants {
 
                 DfsReferral dr = getDfsReferrals(req.auth, req.path, 1);
                 if (dr == null)
-                    throw new SmbException(resp.errorCode, null);   
+                    throw new SmbException(resp.errorCode, null);
 
                 SmbFile.dfs.insert(req.path, dr);
                 throw dr;
@@ -594,9 +595,9 @@ public class SmbTransport extends Transport implements SmbConstants {
                 try {
                     BufferCache.getBuffers( req, resp );
 
-                    /* 
+                    /*
                      * First request w/ interim response
-                     */ 
+                     */
 
                     req.nextElement();
                     if (req.hasMoreElements()) {
@@ -616,7 +617,7 @@ public class SmbTransport extends Transport implements SmbConstants {
                         try {
                             response_map.put( req, resp );
 
-                            /* 
+                            /*
                              * Send multiple fragments
                              */
 
@@ -624,7 +625,7 @@ public class SmbTransport extends Transport implements SmbConstants {
                                 doSend0( req );
                             } while( req.hasMoreElements() && req.nextElement() != null );
 
-                            /* 
+                            /*
                              * Receive multiple fragments
                              */
 
