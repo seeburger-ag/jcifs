@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.seeburger.jcifs</groupId>
   <artifactId>jcifs</artifactId>
-  <version>1.3.17.SEE2-SNAPSHOT</version>
+  <version>1.3.18.SEE1-SNAPSHOT</version>
   <packaging>jar</packaging>
   <name>jCIFS</name>
   <url>http://jcifs.samba.org</url>
