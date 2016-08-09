@@ -23,6 +23,8 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.UnknownHostException;
 
+import jcifs.util.LogStream;
+
 /**
  * This <code>OutputStream</code> can write bytes to a file on an SMB file server.
  */
@@ -123,21 +125,24 @@ write, and/or delete the file while the jCIFS user has the file open.
         this.append = append;
         this.openFlags = openFlags;
         this.access = (openFlags >>> 16) & 0xFFFF;
-        if( append ) {
-            try {
-                fp = file.length();
-            } catch( SmbAuthException sae ) {
-                throw sae;
-            } catch( SmbException se ) {
-                fp = 0L;
-            }
-        }
         if( file instanceof SmbNamedPipe && file.unc.startsWith( "\\pipe\\" )) {
             file.unc = file.unc.substring( 5 );
             file.send( new TransWaitNamedPipe( "\\pipe" + file.unc ),
                                         new TransWaitNamedPipeResponse() );
         }
         file.open( openFlags, access | SmbConstants.FILE_WRITE_DATA, SmbFile.ATTR_NORMAL, 0 );
+        if( append ) {
+            try {
+                fp = file.length();
+            } catch( SmbAuthException sae ) {
+                throw sae;
+            } catch( SmbException se ) {
+                LogStream.getInstance().println("Error determining length in append mode: ");
+                se.printStackTrace(LogStream.getInstance());
+                fp = 0L;
+            }
+        }
+
         this.openFlags &= ~(SmbFile.O_CREAT | SmbFile.O_TRUNC); /* in case close and reopen */
         writeSize = file.tree.session.transport.snd_buf_size - 70;
         boolean isSigningEnabled = (file.tree.session.transport.flags2 & ServerMessageBlock.FLAGS2_SECURITY_SIGNATURES) == ServerMessageBlock.FLAGS2_SECURITY_SIGNATURES;
@@ -195,7 +200,7 @@ write, and/or delete the file while the jCIFS user has the file open.
     {
         return file.isOpen();
     }
-    void ensureOpen() throws IOException {
+    synchronized void ensureOpen() throws IOException {
         // ensure file is open
         if( file.isOpen() == false ) {
             file.open( openFlags, access | SmbConstants.FILE_WRITE_DATA, SmbFile.ATTR_NORMAL, 0 );
