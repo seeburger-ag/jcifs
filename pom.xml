@@ -34,6 +34,7 @@
   <properties>
     <osgi.exported.packages>*</osgi.exported.packages>
     <osgi.imported.packages>!junit,!junit.*,*</osgi.imported.packages>
+    <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
   </properties>
 
   <build>
